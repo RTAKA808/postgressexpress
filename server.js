@@ -75,7 +75,8 @@ ON department.id=department_id`,
     console.log(err);
   }else{
     console.table(res.rows);
-     } mainMenu();
+     }
+      mainMenu();
   
 }
 )}
