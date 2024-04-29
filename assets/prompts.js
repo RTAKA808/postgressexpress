@@ -11,27 +11,8 @@ const menuPrompts=
 
 
 
-const viewDepPrompt={
-    type:'list',
-    name:'viewDepartment',
-    messaage:'Choose a Department to View',
-    choices: 'allDepartmentChoices'
-}
 
 
-const viewRolesPrompt={
-    type:'list',
-    name:'viewRole',
-    messaage:'Choose a Department to View',
-    choices: 'allRoleChoices'
-}
-
-const viewEmployeesPrompt={
-    type:'list',
-    name:'viewEmployees',
-    messaage:'Choose an Employee to View',
-    choices: 'allEmployeeChoices'
-}
 
 const addDepartmentPrompt=
     {
@@ -77,11 +58,6 @@ const addEmployee=[
     
     },
     {
-        type:'number',
-        name:'salary',
-        message:'Please Enter Salary: '
-    },
-    {
         type:'list',
         name:'roleNameList',
         message:'Please Select the Employees Role:',
@@ -96,30 +72,14 @@ const addEmployee=[
 
 ]
     
-const updateEmployeePrompt=[
-    {
-        type:'list',
-        name:'update',
-        message:'Choose an Employee to Update: ',
-        choices:[]
-    },
-    {
-        type:'list',
-        name:'updateRole',
-        message:'Please Select the New Role for the Selected Employee: ',
-        choices:[]
-    }
-]
+
   
 
 module.exports={menuPrompts,
-    viewDepPrompt,
-    viewRolesPrompt,
-    viewEmployeesPrompt,
+    
     addDepartmentPrompt,
     addRolePrompt,
-    addEmployee,
-    updateEmployeePrompt }
+    addEmployee}
 
 
 

@@ -1,13 +1,9 @@
 const { Pool } = require('pg');
 const inquirer= require('inquirer')
 const {menuPrompts,
-  viewDepPrompt,
-  viewRolesPrompt,
-  viewEmployeesPrompt,
   addDepartmentPrompt,
   addRolePrompt,
-  addEmployee,
-  updateEmployeePrompt }=require('./assets/prompts')
+  addEmployee}=require('./assets/prompts')
 
 
 const pool = new Pool(
@@ -47,15 +43,15 @@ mainMenu()
           addNewEmployee();
           break;
         case 'Update An Employee Role':
+          updateEmployee();
           break;
         case 'Quit':
-          
-        process.on('exit',()=>{
-          return console.log('Exiting Employee Database...');
-          })
+          console.log('Exiting Employee Database...');
+          process.exit();
+          break;
+    }
       }
-    });
-  }
+  )}
 
 function viewAllDepartments(){
   pool.query('SELECT * FROM department',
@@ -113,7 +109,7 @@ VALUES ($1)`, [answers.department],
     console.log(err);
   }else{
     console.log("Department Added Sucessfully");
-    pool.query(`SELECT department.id,department.department FROM department WHERE department_name=($1)`,[answers.department],
+    pool.query(`SELECT department.id,department.department_name FROM department WHERE department_name=($1)`,[answers.department],
     (err,res)=>{
       if (err){
         console.log(err);
@@ -169,7 +165,7 @@ pool.query(`SELECT id, job_title FROM roles`,
     value: rol.id
   })
 ) 
-addEmployee[3].choices=roleList;
+addEmployee[2].choices=roleList;
 pool.query(`SELECT id, first_name, last_name FROM employees`,
 (err,res)=>{
   if(err){
@@ -182,8 +178,8 @@ pool.query(`SELECT id, first_name, last_name FROM employees`,
     })
   )
 
-  empList.push({name: 'none', value:''});
-  addEmployee[4].choices=empList;
+  empList.push({name: 'none', value:null});
+  addEmployee[3].choices=empList;
 
   inquirer.prompt(addEmployee).then(answers=>{
 pool.query(`INSERT INTO employees (first_name, last_name , role_id, manager_id)
@@ -209,23 +205,52 @@ VALUES ($1,$2,$3, $4)`, [answers.firstName, answers.lastName,answers.roleNameLis
 
 
 function updateEmployee(){
-pool.query(`SELECT * FROM department`),
-(err,{department})=>{
-  if (err){
-    console.log(err);
-  }
-  console.table(department)
-}}
+    pool.query(`SELECT id,
+    CONCAT (employees.last_name,' ',employees.first_name) 
+    AS employee_name FROM employees `,(err, res) => {
+        if (err){
+            console.error(err)
+        }
+        let employee = res.rows.map((row) => ({
+            name: row.employee_name,
+            value: row.id
+        }));
 
-function quitApp(){
-pool.query(`SELECT * FROM department`),
-(err,{department})=>{
-  if (err){
-    console.log(err);
-  }
-  console.table(department)
+        pool.query(`SELECT id, job_title FROM roles`, (err, res) => {
+            if (err){
+                console.error(err)
+            }
+            let role = res.rows.map((row) =>({
+                name: row.job_title,
+                value: row.id
+            }));
 
-}}
+            const questions = [
+                {
+                    type:'list',
+                    name: 'employee',
+                    message:'SELECT EMPLOYEE',
+                    choices: employee
+                },
+                {
+                    type:'list',
+                    name: 'newRole',
+                    message:'SELECT THEIR NEW ROLE',
+                    choices: role
+                }
+            ]
+            inquirer.prompt(questions).then(answers => {
+                pool.query(`UPDATE employees SET role_id = $1 WHERE id = $2`,
+            [answers.newRole, answers.employee])
+            .then(res => {
+                console.log(`Employees Role Has Been Changed`)
+                mainMenu();
+            });
+            });
+        })
+    });
+};
+
 
 
 
