@@ -46,6 +46,7 @@ mainMenu()
           break;
         case 'Update An Employee Role':
           updateEmployee();
+          break;
         case 'Update An Employees Manager':
           updateEmployeeManager();
           break;
@@ -426,9 +427,9 @@ function deleteRole(){
                 console.log(err);
             }else{
                 console.log(`Employee was deleted`);
-                  }
-              mainMenu();
-                });
+                mainMenu();    
+              }
+            });
             });
           });
         }
