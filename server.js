@@ -59,6 +59,9 @@ mainMenu()
         case 'Delete Employee':
           deleteEmployee();
           break;
+        case 'View Department Budget':
+          viewDepBudget();
+        break;
         case 'Quit':
           console.log('Exiting Employee Database...');
           process.exit();
@@ -430,6 +433,51 @@ function deleteRole(){
                 mainMenu();    
               }
             });
+            });
+          });
+        }
+
+        function viewDepBudget() {
+          pool.query(`SELECT id, department_name FROM department`, (err, res) => {
+            if (err) {
+              console.error(err);
+              return;
+            }
+            let departments = res.rows.map(dep => ({
+              name: dep.department_name,
+              value: dep.id
+            }));
+        
+            inquirer.prompt([
+              {
+                type: "list",
+                name: "departmentId",
+                message: "Select Department to View Budget Information:",
+                choices: departments
+              }
+            ]).then(answer => {
+              // Query to find the total budget for the selected department
+              pool.query(
+                `SELECT 
+                department.department_name,
+                SUM(roles.salary) AS total_salary
+              FROM employees
+              JOIN roles 
+              ON employees.role_id = roles.id
+              JOIN department ON roles.department_id = department.id
+              WHERE department.id = $1
+              GROUP BY department.department_name;`,
+                [answer.departmentId],
+                (err, res) => {
+                  if (err) {
+                    console.error(err);
+                  } else {
+                    console.log(`Viewing the Total Utilized Budget`);
+                    console.table(res.rows);
+                    mainMenu();
+                  }
+                }
+              );
             });
           });
         }
