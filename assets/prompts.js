@@ -5,7 +5,7 @@ const menuPrompts=
         type:'list',
         name:'menu',
         message:'Choose One of the Following',
-        choices:['View All Departments', 'View All Roles', 'View All Employees', 'Add A Department', 'Add a Role','Add An Employee','Update An Employee Role','Quit']
+        choices:['View All Departments', 'View All Roles', 'View All Employees','View Employees By Manager','Add A Department', 'Add a Role','Add An Employee','Update An Employee Role','Update An Employees Manager','Delete a Department','Delete a role','Delete Employee','Quit']
         
         }
 
@@ -72,7 +72,6 @@ const addEmployee=[
 
 ]
     
-
   
 
 module.exports={menuPrompts,

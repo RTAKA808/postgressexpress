@@ -4,18 +4,17 @@ const {menuPrompts,
   addDepartmentPrompt,
   addRolePrompt,
   addEmployee}=require('./assets/prompts')
+  require('dotenv').config();
 
+  const pool = new Pool({
+    database: process.env.DB_NAME,
+    user:process.env.DB_USER,
+    password:process.env.DB_PASSWORD,
+    host: 'localhost',
 
-const pool = new Pool(
-    {
-      user: 'postgres',
-      password: '8336',
-      host: 'localhost',
-      database: 'employees_db',
-      port:5432
     },
-    console.log(`Connected to the employeesDb database.`)
-  )
+  console.log(`Connected to the employeesDb database.`)
+  );
   
   pool.connect();
 
@@ -33,6 +32,9 @@ mainMenu()
         case 'View All Employees':
           viewAllEmployees();
           break;
+        case 'View Employees By Manager':
+        viewEmployeesByManager();  
+        break;
         case 'Add A Department':
           addNewDepartment();
           break;
@@ -44,6 +46,17 @@ mainMenu()
           break;
         case 'Update An Employee Role':
           updateEmployee();
+        case 'Update An Employees Manager':
+          updateEmployeeManager();
+          break;
+        case 'Delete a Department':
+          deleteDepartment();
+          break;
+        case 'Delete a role':
+          deleteRole();
+          break;
+        case 'Delete Employee':
+          deleteEmployee();
           break;
         case 'Quit':
           console.log('Exiting Employee Database...');
@@ -82,15 +95,14 @@ ON department.id=department_id`,
 )}
 
 function viewAllEmployees(){
-pool.query(`SELECT
-employees.id, employees.last_name,employees.first_name,  roles.job_title, department.department_name,roles.salary,CONCAT (employees.last_name,' ',employees.first_name) AS employee_name, CONCAT(manager.first_name,' ',manager.last_name)AS manager_name
+pool.query(`SELECT employees.id, employees.last_name,employees.first_name,  roles.job_title, department.department_name,roles.salary,CONCAT (employees.last_name,' ',employees.first_name) AS employee_name, CONCAT(manager.first_name,' ',manager.last_name)AS manager_name
 FROM department
 JOIN roles
 ON department.id=roles.department_id
 JOIN employees
 ON roles.id=employees.role_id
 LEFT JOIN employees manager 
-ON employees.manager_id=manager.id;
+ON employees.manager_id=manager.id
 `,
 (err,res)=>{
   if (err){
@@ -99,7 +111,24 @@ ON employees.manager_id=manager.id;
     console.table(res.rows);
      } mainMenu();
 }
-)}
+)};
+
+function viewEmployeesByManager(){
+  pool.query(`SELECT employees.id, employees.last_name,employees.first_name, CONCAT (employees.last_name,' ',employees.first_name) AS employee_name, CONCAT(manager.first_name,' ',manager.last_name)AS manager_name
+  FROM employees
+  LEFT JOIN employees manager 
+  ON employees.manager_id=manager.id
+  ORDER BY manager_name,employee_name
+`, 
+(err,res)=>{
+  if (err){
+    console.log(err);
+  }else{
+    console.table(res.rows);
+    mainMenu()
+  }
+  })
+}
 
 function addNewDepartment(){
   inquirer.prompt(addDepartmentPrompt).then(answers=>{
@@ -202,9 +231,6 @@ VALUES ($1,$2,$3, $4)`, [answers.firstName, answers.lastName,answers.roleNameLis
 
 
 
-
-
-
 function updateEmployee(){
     pool.query(`SELECT id,
     CONCAT (employees.last_name,' ',employees.first_name) 
@@ -252,9 +278,157 @@ function updateEmployee(){
     });
 };
 
+function updateEmployeeManager(){
+  pool.query(`SELECT id,
+  CONCAT (last_name,' ',first_name) 
+  AS employee_name FROM employees `,(err, res) => {
+      if (err){
+          console.error(err)
+      }
+      let employee = res.rows.map((row) => ({
+          name: row.employee_name,
+          value: row.id
+      }));
+
+      pool.query(`SELECT id,
+      CONCAT (last_name,' ',first_name) 
+      AS manager FROM employees`, (err, res) => {
+          if (err){
+              console.error(err)
+          }
+          let managers = res.rows.map((row) =>({
+              name: row.manager,
+              value: row.id
+          }));
+
+          const questions = [
+              {
+                  type:'list',
+                  name: 'employeeId',
+                  message:'SELECT EMPLOYEE',
+                  choices: employee
+              },
+              {
+                  type:'list',
+                  name: 'managerId',
+                  message:'SELECT THEIR NEW MANAGER',
+                  choices: managers
+              }
+          ]
+          inquirer.prompt(questions).then(answers => {
+              pool.query(`UPDATE employees SET manager_id = $1 WHERE id = $2`,
+          [answers.managerId, answers.employeeId])
+          .then(res => {
+              console.log(`Employees Manager Has Been Changed`)
+              mainMenu();
+          });
+          });
+      })
+  });
+};
 
 
 
+function deleteDepartment(){
+  pool.query(`SELECT id, department_name FROM department`,
+(err,res)=>{
+  if(err){
+    console.error(err);
+    return;
+    }
+  let deptChoices=res.rows.map(dep=>({
+    name:dep.department_name,
+    value: dep.id
+  })
+); 
 
 
+inquirer.prompt([
+  {
+    type:'list',
+    name:'departmentId',
+    message:'Which Department Do You Want to Delete? ',
+    choices: deptChoices
+  }
+]).then(answers=> {
+    pool.query(`DELETE FROM department WHERE id= $1`,[answers.departmentId],
+      (err,res)=>{
+        if(err){
+            console.log(err);
+        }else{
+            console.log(`Department was deleted`);
+              }
+          mainMenu();
+            });
+        });
+      });
+    }
+function deleteRole(){
+    pool.query(`SELECT id,job_title FROM roles`,
+  (err,res)=>{
+    if(err){
+      console.error(err);
+      return;
+      }
+      let roleChoices=res.rows.map(roll=>({
+        name:roll.job_title,
+        value: roll.id
+      })
+    ); 
+    
+    
+    inquirer.prompt([
+      {
+        type:'list',
+        name:'roleId',
+        message:'Which Department Do You Want to Delete? ',
+        choices: roleChoices
+      }
+  ]).then(answers => {
+      pool.query(`DELETE FROM roles WHERE id=$1`,[answers.roleId],
+        (err,res)=>{
+          if(err){
+              console.log(err);
+          }else{
+              console.log(`Role has been deleted`);
+                }
+            mainMenu();
+              });
+          });
+        });
+      }
 
+    function deleteEmployee(){
+      pool.query(`SELECT id, CONCAT(last_name,' ',first_name) AS name
+      FROM employees`,
+    (err,res)=>{
+      if(err){
+        console.error(err);
+        return;
+        }
+      let empChoices=res.rows.map(emp=>({
+        name: emp.name,
+        value: emp.id
+      })
+    ); 
+    
+    inquirer.prompt([
+      {
+        type:'list',
+        name:'employeeId',
+        message:'Which Employee Do You Want to Delete? ',
+        choices: empChoices
+      }
+    ]).then(answers => {
+        pool.query(`DELETE FROM employees WHERE id=$1`,[answers.employeeId],
+          (err,res)=>{
+            if(err){
+                console.log(err);
+            }else{
+                console.log(`Employee was deleted`);
+                  }
+              mainMenu();
+                });
+            });
+          });
+        }
